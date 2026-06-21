@@ -1,27 +1,57 @@
-// sudo gcc main.c MLX42/build/libmlx42.a -I MLX42/include/MLX42 -I include -ldl -lglfw -pthread -lm
+// gcc main.c utils.c MLX42/build/libmlx42.a -I MLX42/include/MLX42 -I include -ldl -lglfw -pthread -lm
 
 #include "minirt.h"
 
 static mlx_image_t* image;
 
+int32_t color(double r, double g, double b)
+{
+	int red = r * 255;
+	int green = g * 255;
+	int blue = b * 255;
+
+	return ft_pixel(red, green, blue, 255);
+}
+
 double hit_sphere(t_vec center, double radius, t_ray r) {
-    t_vec oc = vec_sub(2, center, r.origin);
+    t_vec cen_to_og= vec_sub(2, center, r.origin);
     double a = dot_product(r.direction, r.direction);
-    double b = -2.0 * dot_product(r.direction, oc);
-    double c = dot_product(oc, oc) - radius*radius;
-    double discriminant = (b*b) - (4*a*c);
-    return (discriminant >= 0);
+    double h = dot_product(r.direction, cen_to_og);
+    double c = dot_product(cen_to_og, cen_to_og) - radius*radius;
+    double discriminant = pow(h,2) - (a*c);
+
+	if(discriminant < 0)
+		return (-1.0); // false
+	
+	// double sqrtd = sqrt(discriminant);
+	// double root = (h - sqrtd) / a;
+	// double ray_tmin = 0.001;
+	// double ray_tmax = INFINITY; 
+	// if (root <= ray_tmin || ray_tmax <= root) {
+    //         root = (h + sqrtd) / a;
+    //         if (root <= ray_tmin || ray_tmax <= root)
+    //             return false;
+    //     }
+	// double t = root;
+	// t_vec hit_point = vec_sum(2, r.origin, vec_scale(r.direction, t));
+	// t_vec normal = vec_normalize(vec_sub(2, hit_point, center));
+
+    return (h - sqrt(discriminant) ) / a;
 }
 
 uint32_t ray_color(t_ray r) {
 	t_vec center = vec_init(0, 0, -1);
-
-    if (hit_sphere(center, 0.5, r))
-        return ft_pixel(255, 0, 0, 255);
+	double t = hit_sphere(center, 0.5, r);
+	if(t > 0.0)
+	{
+		t_vec N = vec_normalize(vec_sub(2, vec_sum(2, r.origin, vec_scale(r.direction, t)), center));
+		// printf("color is (%f, %f, %f)\n", 0.5 * (N.x + 1), 0.5 * (N.y + 1), 0.5 * (N.z + 1));
+		return color(0.5 * (N.x + 1), 0.5 * (N.y + 1), 0.5 * (N.z + 1) );
+	}
 
 	t_vec unit_direction = vec_normalize(r.direction);
     double a = 0.5*(unit_direction.y + 1.0);
-    return (1.0-a)*ft_pixel(255, 255, 255, 255) + a* ft_pixel(100, 200, 255, 255);
+    return color((1.0-a), (1.0-a) ,(1.0-a)) + color(a * 0.5, a * 0.7, a * 1.0);
 }
 
 

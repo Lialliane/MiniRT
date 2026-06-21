@@ -25,6 +25,24 @@ typedef struct s_ray
 	t_vec direction;
 } t_ray;
 
+typedef struct s_circle
+{
+	t_vec center;
+	double radius;
+} t_circle;
+
+typedef struct s_hit_record
+{
+	t_vec point;
+	t_vec normal;
+	double t;
+} t_hit_record;
+
+// typedef struct s_object
+// {
+// 	(double) hit (t_ray r);
+// } t_object;
+
 
 t_vec	vec_sum(const int sum_count, ...);
 t_vec	vec_sub(const int sum_count, ...);
