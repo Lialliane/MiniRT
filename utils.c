@@ -81,7 +81,7 @@ int32_t ft_pixel(int32_t r, int32_t g, int32_t b, int32_t a)
 }
 
 
-t_vec vec_init(int x, int y, int z)
+t_vec vec_init(double x, double y, double z)
 {
     t_vec vec;
 
@@ -89,4 +89,14 @@ t_vec vec_init(int x, int y, int z)
     vec.y = y;
     vec.z = z;
     return (vec);
+}
+
+double degrees_to_radians(double degrees)
+{
+	return (degrees * PI / 180.0);
+}
+
+t_vec ray_fun(t_ray ray, double t)
+{
+	return vec_sum(2, ray.origin, vec_scale(ray.direction, t));
 }
