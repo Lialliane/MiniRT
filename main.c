@@ -6,16 +6,16 @@ static mlx_image_t* image;
 
 int32_t color(double r, double g, double b)
 {
-	int red = r * 255;
-	int green = g * 255;
-	int blue = b * 255;
+	int red = r * 255.0;
+	int green = g * 255.0;
+	int blue = b * 255.0;
 
 	return ft_pixel(red, green, blue, 255);
 }
 
-double hit_sphere(t_vec center, double radius, t_ray r, t_hit_point* hit_point)
+double hit_sphere(t_vec cir_center, double radius, t_ray r, t_hit_point* hit_point)
 {
-    t_vec cen_to_og = vec_sub(2, center, r.origin);
+    t_vec cen_to_og = vec_sub(2, cir_center, r.origin);
     double a = dot_product(r.direction, r.direction);
     double h = dot_product(r.direction, cen_to_og);
     double c = dot_product(cen_to_og, cen_to_og) - radius*radius;
@@ -28,45 +28,92 @@ double hit_sphere(t_vec center, double radius, t_ray r, t_hit_point* hit_point)
 	double ray_tmin = 0.001;
 	double ray_tmax = INFINITY;
 
-	// 	double closest_t = INFINITY;  for later
+	// for later maybe?
+	// 	double closest_t = INFINITY; 
 	// if (t > 0.001 && t < closest_t)
 	// {
 	// 	closest_t = t;
 	// }
-	if (root <= ray_tmin || ray_tmax <= root) {
+	if (root <= ray_tmin || ray_tmax <= root) 
+	{
             root = (h + sqrt(discriminant)) / a;
             if (root <= ray_tmin || ray_tmax <= root)
                 return false;
-        }
+    }
 	hit_point->t = root;
 	hit_point->point = ray_fun(r, hit_point->t);
-	hit_point->normal = vec_normalize(vec_sub(2, hit_point->point, center));
-	hit_point->front_face = dot_product(r.direction, hit_point->normal) < 0;
-	hit_point->normal = hit_point->front_face ? hit_point->normal : vec_scale(hit_point->normal, -1);
+	hit_point->normal = vec_normalize(vec_sub(2, hit_point->point, cir_center));
 
     return true;
 }
 
-uint32_t ray_color(t_ray r, t_vec center) {
+void highlight(t_color *color, double sparkle)
+{	
+	color->r += sparkle;
+	color->g += sparkle;
+	color->b += sparkle;
+	if (color->r > 1)
+		color->r = 1;
+	if (color->g > 1)
+		color->g = 1;
+	if (color->b > 1)
+		color->b = 1;
+}
+
+// pass light properties to this function and return a color based on the brightness
+int32_t trace_light(t_vec normal, t_vec hit_point, t_color color_object)
+{
+	double ambient = 0.15;
+	double sparkle = 0;
+	t_vec light_pos = vec_init(0.5, 0.5, 0.5);
+	t_vec light_dir = vec_normalize(vec_sub(2, light_pos, hit_point));
+	double defuse = dot_product(normal, light_dir);
+	if (defuse < 0)
+		defuse = 0;
+	double brightness = ambient + defuse;
+	if(brightness > 1)
+	{	
+		sparkle = (brightness - 1) * (1.0/ambient);
+		if (sparkle < 0.75)
+			sparkle = 0;
+		if (sparkle > 0.75)
+			sparkle = (sparkle - 0.75) * 4;
+		brightness = 1;
+		// printf("sparkle is %f\n", sparkle);
+	}
+	t_color shaded_color = 
+	{
+		color_object.r * brightness,
+		color_object.g * brightness,
+		color_object.b * brightness
+	};
+
+	highlight(&shaded_color, sparkle);
+	return color(shaded_color.r, shaded_color.g, shaded_color.b);
+}
+
+
+
+uint32_t ray_color(t_ray r, t_vec center) 
+{
 	t_hit_point *hit_point = malloc(sizeof(t_hit_point));
 	if (hit_point == NULL) {
 		fprintf(stderr, "Memory allocation failed for hit_point\n");
 		exit(EXIT_FAILURE);
 	}
 	// TODO change hit function to match object type
-	hit_sphere(center, 0.5, r, hit_point);
 	
-	if(hit_point->t > 0.0)
+	if(hit_sphere(center, 0.5, r, hit_point) == true)
 	{
 		t_vec N = vec_normalize(vec_sub(2, ray_fun(r, hit_point->t), center));
-		// printf("color is (%f, %f, %f)\n", 0.5 * (N.x + 1), 0.5 * (N.y + 1), 0.5 * (N.z + 1));
-		return color(0.5 * (N.x + 1), 0.5 * (N.y + 1), 0.5 * (N.z + 1) );
+		t_color red = {1, 0, 0};
+		return trace_light(N, hit_point->point, red);
 	}
 
 	t_vec unit_direction = vec_normalize(r.direction);
     double a = 0.5*(unit_direction.y + 1.0);
 	free(hit_point);
-    return color((1.0-a), (1.0-a) ,(1.0-a)) + color(a * 0.5, a * 0.7, a * 1.0);
+    return color(0.7, 0.8, 0.85);
 }
 
 typedef struct s_viewport
@@ -82,8 +129,8 @@ void initialize(t_viewport* v)
 {
 	v->camera_pos = vec_init(0, 0, 0);
 	t_vec focal_point = vec_init(0, 0, 1);
-	int viewport_height = 2;
-	int viewport_width = viewport_height * (double)(WIDTH/HEIGHT);
+	double viewport_height = 2;
+	double viewport_width = viewport_height * (((double)WIDTH)/HEIGHT);
 
 	// the viewport is centered on the focal point, so we need to calculate 
 	// the right and bottom vectors to get the upper left corner of the viewport
@@ -105,11 +152,13 @@ void initialize(t_viewport* v)
 void shoot_ray(void* param)
 {
 	(void)param;
+
 	t_viewport *v = malloc(sizeof(t_viewport));
 	if (!v) {
 		fprintf(stderr, "Memory allocation failed for viewport\n");
 		exit(EXIT_FAILURE);
 	}
+	
 	initialize(v);
 
 	for (uint32_t y = 0; y < image->height; y++)

@@ -22,6 +22,10 @@ make
 
 ### [article] (https://mathbitsnotebook.com/Algebra1/Quadratics/QDdiscriminant.html)
 
+### [article] (https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-ray-tracing//implementing-the-raytracing-algorithm.html)
+
+### [article] (https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/definition-ray.html)
+
 ### AI
 
 **We used AI in the following ways:**

@@ -91,11 +91,6 @@ t_vec vec_init(double x, double y, double z)
     return (vec);
 }
 
-double degrees_to_radians(double degrees)
-{
-	return (degrees * PI / 180.0);
-}
-
 t_vec ray_fun(t_ray ray, double t)
 {
 	return vec_sum(2, ray.origin, vec_scale(ray.direction, t));
